@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class ActivationFunction:
     def __init__(self, name, function, derivative):
         self.name = name

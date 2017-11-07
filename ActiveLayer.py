@@ -1,10 +1,11 @@
 import numpy as np
 from ActivationFunction import activationFunctions
 
+
 class ActiveLayer:
-    def __init__(self, size, xLength, activationFunctionName):
+    def __init__(self, size, inputSize, activationFunctionName):
         self.size = size
-        self.xLength = xLength
+        self.inputSize = inputSize
         self.activationFunctionName = activationFunctionName
         self.activationFunction = activationFunctions[activationFunctionName]
 
@@ -15,8 +16,10 @@ class ActiveLayer:
 
 
     def initializeWeights(self):
-        # TODO initialize in different ways depending on activation function
-        return np.random.rand(self.size, self.xLength)
+        # TODO: initialize in different ways depending on activation function
+        # return np.random.rand(self.size, self.inputSize)
+        return np.ones((self.size, self.inputSize))
+
 
 
     def activate(self, x):
