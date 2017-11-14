@@ -30,5 +30,13 @@ def sigmoid(z):
 
 def derivedSigmoid(z):
     return sigmoid(z) * (1 - sigmoid(z))
+    # TODO: seems to be right
 
 activationFunctions["sigmoid"] = ActivationFunction("sigmoid", sigmoid, derivedSigmoid)
+
+
+# =================================================
+# SOFTMAX
+def softmax(z):
+    z_exp = np.exp(z)
+    return np.divide(z_exp, np.sum(z_exp, axis=0, keepdims=True))

@@ -13,7 +13,12 @@ class ActiveLayer:
         self.weights = self.initializeWeights()
         self.z = 0
         self.output = None
-        self.error = None
+
+        # d stands for derivative
+        self.dz = None
+        self.dw = None # gradients for the weights
+        self.db = None # gradients for the biases
+        self.da = None
 
 
     def initializeWeights(self):

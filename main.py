@@ -1,16 +1,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from NeuralNet import NeuralNet
-from data import x_train, y_train, x_test, y_test
+# from data import x_train, y_train, x_test, y_test
+#
+# from sklearn import preprocessing
+#
+# x_train = preprocessing.scale(x_train)
+
+x_test = np.array([[0, 0],
+              [0.2, 0],
+              [0.5, 1],
+              [0, 0.5]])
+
+y_test = np.array([0, 1])
 
 
-# nn = NeuralNet(0.03, ["sigmoid", 16, "sigmoid", 16, "sigmoid", 10], x_test, y_test, yIsOneHot=False)
-# nn.train(1000)
 
-sample = x_train[:, 1]
-sample = sample.reshape([28,28])
+nn = NeuralNet(0.01, ["sigmoid", 5, "sigmoid", 2], x_test, y_test, yIsOneHot=False)
+nn.forwardpropagation()
+nn.backwardpropagation()
 
-print(sample)
-imgplot = plt.imshow(sample)
-plt.gray()
-plt.show()
+
+# for i in range(1, 11):
+#     print("training ...")
+#     nn.train(iterations)
+#     accuracy, results = nn.getAccuracy()
+#     print("Accuracy after ", i * iterations, " iterations: ", accuracy)
+#     print("Cost after ", i * iterations, " iterations: ", nn.getCost())
