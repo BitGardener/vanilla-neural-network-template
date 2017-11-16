@@ -18,7 +18,7 @@ def relu(z):
     return np.maximum(0, z)
 
 def derivedRelu(z):
-    return np.greater(z, 0) * 1
+    return  1 * (z > 0)
 
 activationFunctions["relu"] = ActivationFunction("relu", relu, derivedRelu)
 
@@ -30,7 +30,6 @@ def sigmoid(z):
 
 def derivedSigmoid(z):
     return sigmoid(z) * (1 - sigmoid(z))
-    # TODO: seems to be right
 
 activationFunctions["sigmoid"] = ActivationFunction("sigmoid", sigmoid, derivedSigmoid)
 

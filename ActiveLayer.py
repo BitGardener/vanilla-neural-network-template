@@ -9,7 +9,7 @@ class ActiveLayer:
         self.activationFunctionName = activationFunctionName
         self.activationFunction = activationFunctions[activationFunctionName]
 
-        self.bias = np.zeros([self.size, 1])  # TODO: bias can be initialized with 0, TEST IF TRUE
+        self.bias = self.initializeBiases() #np.zeros([self.size, 1])  # TODO: bias can be initialized with 0, TEST IF TRUE
         self.weights = self.initializeWeights()
         self.z = 0
         self.output = None
@@ -21,9 +21,13 @@ class ActiveLayer:
         self.da = None
 
 
+    # TODO: initialize in different ways depending on activation function
     def initializeWeights(self):
-        # TODO: initialize in different ways depending on activation function
-        return np.random.rand(self.size, self.inputSize)
+        return np.random.randn(self.size, self.inputSize) * 0.01
+
+
+    def initializeBiases(self):
+        return np.random.randn(self.size, 1) * 0.01
 
 
     def activate(self, x):

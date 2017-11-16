@@ -14,21 +14,38 @@ import numpy as np
 
 
 class NeuralNet:
-    def __init__(self, learningRate, layerInformation, x, y, yIsOneHot=True):
+    def __init__(self, learningRate, layerInformation, x, y, x_test=None, y_test=None, yIsOneHot=True):
         self.x = x
+        self.x_test = x_test
         self.m = self.x.shape[1]
         self.y = self.oneHotY(y, yIsOneHot)
+        self.y_test = self.vectoriceY(y_test, yIsOneHot)
         self.yVectorized = self.vectoriceY(y, yIsOneHot)
         self.learningRate = learningRate
         self.activeLayers = self.initializeLayers(layerInformation)
-        self.currentCost = np.float32(0)
+        self.currentCost = None
 
 
     def train(self, iterations):
         for i in range(iterations):
             self.forwardpropagation()
+            self.currentCost = self.costFunction()
             self.backwardpropagation()
-            #print("Cost after ", i, " iterations: ", self.currentCost)
+
+            accuracy, results = self.getAccuracy()
+            print("Cost after ", i, " iterations: ", self.currentCost, " | Accuracy training set: ", accuracy)
+            print("Accuracy training set: ", accuracy)
+            # accuracy, results = self.test()
+            # print("Accuracy testing set: ", accuracy)
+            # print()
+
+            self.updateWeightsAndBiases()
+
+
+
+            # optional
+            # print("guckguck")
+            # self.gradientChecking()
 
 
     def forwardpropagation(self):
@@ -38,48 +55,39 @@ class NeuralNet:
             self.activeLayers[i].activate(self.activeLayers[i - 1].output)
 
 
+    # TODO: clear up backprop
+    # TODO: add input layer to self.activeLayers (rename to self.layers) to simplify, only one for loop needed
     def backwardpropagation(self):
-        self.calculateErrors()
-        gradientsW, gradientsB = self.calculateGradients()
-        # optional
-        self.gradientChecking(gradientsW, gradientsB)
+        # calculate gradients for output layer
+        outputL = self.activeLayers[-1]
+        outputL.dz = np.subtract(outputL.output, self.y)
+        if (len(self.activeLayers) == 1):
+            outputL.dw = outputL.dz.dot(self.x.T) / self.m
+        else:
+            outputL.dw = outputL.dz.dot(self.activeLayers[-2].output.T) / self.m
+            self.activeLayers[-2].da = outputL.weights.T.dot(outputL.dz)
 
-
-        self.updateWeightsAndBiases(gradientsW, gradientsB)
-        # TODO: implement gradient checking boy
-
-
-    def calculateErrors(self):
-        self.activeLayers[-1].error = np.subtract(self.y, self.activeLayers[-1].output)
+        # TODO: Gradients from backprop are twice as large as gradients from numeric gradient calculation
+        outputL.db = np.sum(outputL.dz, axis=1, keepdims=True) / self.m
 
         for i in range(len(self.activeLayers) - 2, -1, -1):
-            layer = self.activeLayers[i]
-            w = self.activeLayers[i + 1].weights
+            currentL = self.activeLayers[i]
+            currentL.dz = currentL.da * currentL.activationFunction.derivative(currentL.z)
+            currentL.db = currentL.dz.sum(axis=1, keepdims=True) / self.m
 
-            wTimesE = np.dot(w.T, self.activeLayers[i + 1].error)
-            layer.error = wTimesE * layer.activationFunction.derivative(layer.z)
+            if (i == 0):
+                currentL.dw = currentL.dz.dot(self.x.T) / self.m
+                break
 
-
-    def calculateGradients(self):
-        gradientsW = []
-        gradientsB = []
-        firstActLayer = self.activeLayers[0]
-        gradientsW.append(np.dot(firstActLayer.error, self.x.T) / self.m)
-        gradientsB.append(np.sum(firstActLayer.error, axis=1, keepdims=True) / self.m)
-
-        for i in range(1, len(self.activeLayers)):
-            layer = self.activeLayers[i]
-            gradientsW.append(np.dot(layer.error, self.activeLayers[i - 1].output.T) / self.m)
-            # TODO: is bias gradient calculation implemented correctly?
-            gradientsB.append(np.sum(layer.error, axis=1, keepdims=True) / self.m)
-
-        return gradientsW, gradientsB
+            currentL.dw = currentL.dz.dot(self.activeLayers[i - 1].output.T) / self.m
+            self.activeLayers[i - 1].da = currentL.weights.T.dot(currentL.dz)
 
 
-    def updateWeightsAndBiases(self, gradientsW, gradientsB):
+    def updateWeightsAndBiases(self):
         for i, layer in enumerate(self.activeLayers):
-            layer.weights -= self.learningRate * gradientsW[i]
-            layer.bias -= self.learningRate * gradientsB[i]
+            layer.weights -= self.learningRate * layer.dw
+            layer.bias -= self.learningRate * layer.db
+
 
     def costFunction(self):
         # cross-entropy cost (good cost function for logistic regression)
@@ -87,14 +95,13 @@ class NeuralNet:
         return np.sum(np.sum(-(np.multiply(self.y, np.log(a)) + np.multiply((1 - self.y), np.log(1 - a))))) / self.m
 
 
-
-    def gradientChecking(self, backpropGradientsW, backpropGradientsB):
+    def gradientChecking(self):
         numericGradientsW = []
         numericGradientsB = []
 
         e = np.float32(1e-4)
 
-        for layI, layer in enumerate(self.activeLayers):
+        for i, layer in enumerate(self.activeLayers):
             numericGradientsW.append(np.zeros(layer.weights.shape))
             numericGradientsB.append(np.zeros(layer.bias.shape))
 
@@ -116,39 +123,38 @@ class NeuralNet:
                     layer.weights[rowI, colI] = temp
 
                     gradient = (loss1 - loss2) / (2*e)
-                    numericGradientsW[layI][rowI, colI] = gradient
+                    numericGradientsW[i][rowI, colI] = gradient
 
             # calculate numericGradientsB for one layer
-            for i in range(layer.size):
-                temp = layer.bias[i]
+            for rowI in range(layer.size):
+                temp = layer.bias[rowI]
 
-                layer.bias[i] += e
+                layer.bias[rowI] += e
                 self.forwardpropagation()
                 loss1 = self.costFunction()
 
-                layer.bias[i] = temp
+                layer.bias[rowI] = temp
 
-                layer.bias[i] -= e
+                layer.bias[rowI] -= e
                 self.forwardpropagation()
                 loss2 = self.costFunction()
 
-                layer.bias[i] = temp
+                layer.bias[rowI] = temp
 
                 gradient = (loss1 - loss2) / (2*e)
-                numericGradientsB[layI][i] = gradient
+                numericGradientsB[i][rowI] = gradient
 
         print("GRADIENT CHECKING")
         print("NUMERICAL | BACKPROP")
-        for layI in range(len(self.activeLayers)):
-            print("\nLAYER ", layI)
+        for i, layer in enumerate(self.activeLayers):
+            print("\nLAYER ", i)
             print("WEIGHTS")
-            for rowI in range(np.minimum(5, self.activeLayers[layI].size)):
-                print(numericGradientsW[layI][rowI, 0], " | ", backpropGradientsW[layI][rowI, 0])
+            for rowI in range(np.minimum(5, self.activeLayers[i].size)):
+                print(numericGradientsW[i][rowI, 1], " | ", layer.dw[rowI, 1])
 
             print("\nBIASES")
-            for rowI in range(np.minimum(5, self.activeLayers[layI].size)):
-                print(numericGradientsB[layI][rowI, 0], " | ", backpropGradientsB[layI][rowI, 0])
-
+            for rowI in range(np.minimum(5, self.activeLayers[i].size)):
+                print(numericGradientsB[i][rowI, 0], " | ", layer.db[rowI, 0])
 
 
     def initializeLayers(self, layerInformation):
@@ -180,23 +186,66 @@ class NeuralNet:
 
 
     def vectoriceY(self, y, yIsOneHot):
-        if (yIsOneHot):
+        if (yIsOneHot and y is not None):
             return np.argmax(y, axis=0)
         else:
             return y
 
 
-    def getAccuracy(self):
+    def getAccuracy(self, yVectorized=None):
         # get accuracy in percent
         # also returns a bool vector of which predictions were right/wrong
+        if yVectorized is None:
+            yVectorized = self.yVectorized
+
         maxIndexes = self.activeLayers[-1].output.argmax(axis=0)
-        results = np.equal(maxIndexes, self.yVectorized)
+        results = np.equal(maxIndexes, yVectorized)
         rightPredictionsCount = np.count_nonzero(results)
 
-        return (rightPredictionsCount / self.m) * 100, results
+        return (rightPredictionsCount / yVectorized.size) * 100, results
+
+
+    def test(self):
+        if self.x_test is None or self.y_test is None:
+            print("No test data available")
+            return None, None
+
+        x = self.x
+        self.x = self.x_test
+        self.forwardpropagation()
+        self.x = x
+        return self.getAccuracy(yVectorized=self.y_test)
+
+    def classifyExample(self, example):
+        x = self.x
+        self.x = example
+        self.forwardpropagation()
+        label = self.activeLayers[-1].output.argmax()
+        self.x = x
+        print(self.activeLayers[-1].output)
+        return label
+
 
     def getCost(self):
         return self.currentCost
+
+
+    def saveWeightsAndBiases(self):
+        for i, layer in enumerate(self.activeLayers):
+            fileName = "weightsLayer{0}.npy".format(i)
+            np.save(fileName, layer.weights)
+
+            fileName = "biasesLayer{0}.npy".format(i)
+            np.save(fileName, layer.bias)
+
+
+    def loadWeightsAndBiases(self):
+        for i, layer in enumerate(self.activeLayers):
+            fileName = "weightsLayer{0}.npy".format(i)
+            layer.weights = np.load(fileName)
+
+            fileName = "biasesLayer{0}.npy".format(i)
+            layer.bias = np.load(fileName)
 
 
     def printLayer(self, layerIndex):
@@ -207,6 +256,3 @@ class NeuralNet:
         print("weightsshape: ", np.shape(layer.weights))
         print("output: ", layer.output)
         print("----------------------")
-
-
-
