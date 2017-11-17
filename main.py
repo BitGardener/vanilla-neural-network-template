@@ -44,11 +44,14 @@ x_test = preprocessing.scale(x_test, axis=1)
 # x_test = scale(x_test, axis=1, mean=mean, std=std)[0]
 nn = NeuralNet(0.3, ["relu", 256, "relu", 128, "sigmoid", 10], x_train, y_train, x_test, y_test, yIsOneHot=False)
 
-nn.loadWeightsAndBiases()
+#nn.loadWeightsAndBiases()
 # accuracy, smt = nn.test()
 #
 # print("Accuracy test set: ", accuracy)
 # nn.train(100)
 # nn.saveWeightsAndBiases()
 
-analyseDrawingExamples(nn, x_for_scaling)
+nn.train(100)
+
+
+#analyseDrawingExamples(nn, x_for_scaling)

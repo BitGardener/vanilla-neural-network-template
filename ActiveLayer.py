@@ -1,10 +1,12 @@
 import numpy as np
+from Layer import Layer
 from ActivationFunction import activationFunctions
 
 
-class ActiveLayer:
+class ActiveLayer(Layer):
     def __init__(self, size, inputSize, activationFunctionName):
-        self.size = size
+        Layer.__init__(self, size)
+
         self.inputSize = inputSize
         self.activationFunctionName = activationFunctionName
         self.activationFunction = activationFunctions[activationFunctionName]
@@ -12,7 +14,6 @@ class ActiveLayer:
         self.bias = self.initializeBiases() #np.zeros([self.size, 1])  # TODO: bias can be initialized with 0, TEST IF TRUE
         self.weights = self.initializeWeights()
         self.z = 0
-        self.output = None
 
         # d stands for derivative
         self.dz = None
@@ -33,3 +34,4 @@ class ActiveLayer:
     def activate(self, x):
         self.z = np.add(np.dot(self.weights, x), self.bias)
         self.output = self.activationFunction.function(self.z)
+
