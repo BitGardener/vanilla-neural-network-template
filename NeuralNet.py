@@ -34,12 +34,11 @@ class NeuralNet:
 
             accuracy, results = self.getAccuracy()
             print("Cost after ", i, " iterations: ", self.currentCost, " | Accuracy training set: ", accuracy)
-            print("Accuracy training set: ", accuracy)
 
             # TESTING
-            accuracy, results = self.test()
-            print("Accuracy testing set: ", accuracy)
-            print()
+            # accuracy, results = self.test()
+            # print("Accuracy testing set: ", accuracy)
+            # print()
 
             self.updateWeightsAndBiases()
 
@@ -202,12 +201,12 @@ class NeuralNet:
     def classifyExample(self, example):
         # TODO: won't work, because i don't use self.x anymore in forwardprop
         # made x an layer
-        x = self.x
-        self.x = example
+        self.layers[0].output = example
+        self.layers[0].size = example.shape[0]
         self.forwardpropagation()
+        self.layers[0].output = self.x
+        self.layers[0].size = self.x.shape[0]
         label = self.layers[-1].output.argmax()
-        self.x = x
-        print(self.layers[-1].output)
         return label
 
 
